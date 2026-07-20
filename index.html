@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Dr AutoTech - Check-In de Vehículos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0D0F14',
+            card: '#16191F',
+            primary: '#E63946',
+            secondary: '#1D6FE8',
+            textPrimary: '#FFFFFF',
+            textSecondary: '#A0A8B8',
+            inputBg: '#1E2230',
+            inputBorder: '#2C3044',
+            success: '#22C55E',
+            cardBorder: 'rgba(255,255,255,0.07)',
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0D0F14;
+      --card: #16191F;
+      --primary: #E63946;
+      --secondary: #1D6FE8;
+      --text-primary: #FFFFFF;
+      --text-secondary: #A0A8B8;
+      --input-bg: #1E2230;
+      --input-border: #2C3044;
+      --success: #22C55E;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background shapes */
+    .bg-shapes {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .bg-shapes .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.03;
+      animation: floatShape 20s ease-in-out infinite;
+    }
+    .bg-shapes .shape:nth-child(1) {
+      width: 300px; height: 300px; background: var(--primary);
+      top: -50px; left: -80px; animation-duration: 25s;
+    }
+    .bg-shapes .shape:nth-child(2) {
+      width: 200px; height: 200px; background: var(--secondary);
+      top: 40%; right: -60px; animation-duration: 18s; animation-delay: -5s;
+    }
+    .bg-shapes .shape:nth-child(3) {
+      width: 150px; height: 150px; background: var(--primary);
+      bottom: 10%; left: 20%; animation-duration: 22s; animation-delay: -10s;
+    }
+    .bg-shapes .shape:nth-child(4) {
+      width: 250px; height: 250px; background: var(--secondary);
+      top: 20%; left: 60%; animation-duration: 30s; animation-delay: -3s;
+    }
+    .bg-shapes .shape:nth-child(5) {
+      width: 180px; height: 180px; background: var(--primary);
+      bottom: -40px; right: 30%; animation-duration: 20s; animation-delay: -8s;
+      border-radius: 30%;
+    }
+
+    @keyframes floatShape {
+      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      25% { transform: translate(30px, -40px) rotate(90deg) scale(1.1); }
+      50% { transform: translate(-20px, 20px) rotate(180deg) scale(0.95); }
+      75% { transform: translate(40px, 30px) rotate(270deg) scale(1.05); }
+    }
+
+    /* Card glassmorphism */
+    .glass-card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 4px 30px rgba(230, 57, 70, 0.06), 0 1px 3px rgba(0,0,0,0.3);
+      border-radius: 16px;
+    }
+
+    /* Step transitions */
+    .step-panel {
+      display: none;
+      animation: slideIn 0.4s ease-out forwards;
+    }
+    .step-panel.active { display: block; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(-30px); }
+    }
+
+    /* Floating labels */
+    .float-group { position: relative; }
+    .float-group input,
+    .float-group select,
+    .float-group textarea {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 22px 14px 8px;
+      font-size: 16px;
+      color: var(--text-primary);
+      width: 100%;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      font-family: 'Inter', sans-serif;
+    }
+    .float-group select { padding-top: 18px; padding-bottom: 6px; -webkit-appearance: none; appearance: none; }
+    .float-group input:focus,
+    .float-group select:focus,
+    .float-group textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+    }
+    .float-group label {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-secondary);
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+    .float-group textarea ~ label { top: 22px; transform: translateY(0); }
+    .float-group input:focus ~ label,
+    .float-group input:not(:placeholder-shown) ~ label,
+    .float-group select:focus ~ label,
+    .float-group select:not([data-empty="true"]) ~ label,
+    .float-group textarea:focus ~ label,
+    .float-group textarea:not(:placeholder-shown) ~ label {
+      top: 6px;
+      transform: translateY(0);
+      font-size: 11px;
+      color: var(--primary);
+    }
+    .float-group .error-msg {
+      font-size: 12px;
+      color: var(--primary);
+      margin-top: 4px;
+      display: none;
+    }
+    .float-group.has-error input,
+    .float-group.has-error select {
+      border-color: var(--primary);
+    }
+    .float-group.has-error .error-msg { display: block; }
+
+    /* Service tiles */
+    .service-tile {
+      background: var(--input-bg);
+      border: 2px solid var(--input-border);
+      border-radius: 12px;
+      padding: 14px 10px;
+      cursor: pointer;
+      transition: all 0.25s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+      min-height: 52px;
+    }
+    .service-tile:hover { border-color: rgba(230,57,70,0.4); }
+    .service-tile.selected {
+      border-color: var(--primary);
+      background: rgba(230, 57, 70, 0.08);
+      box-shadow: 0 0 12px rgba(230, 57, 70, 0.12);
+    }
+    .service-tile .tile-check {
+      width: 22px; height: 22px;
+      border: 2px solid var(--input-border);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .service-tile.selected .tile-check {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Fuel gauge */
+    .fuel-track {
+      width: 100%; height: 14px;
+      background: var(--input-bg);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .fuel-fill {
+      height: 100%; border-radius: 10px;
+      transition: width 0.3s;
+      background: linear-gradient(90deg, #E63946 0%, #f59e0b 50%, #22C55E 100%);
+    }
+    input[type="range"].fuel-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 14px;
+      background: transparent;
+      position: absolute; top: 0; left: 0;
+      margin: 0; cursor: pointer;
+    }
+    input[type="range"].fuel-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px; height: 24px;
+      background: #fff;
+      border-radius: 50%;
+      border: 3px solid var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      margin-top: -5px;
+    }
+    input[type="range"].fuel-slider::-moz-range-thumb {
+      width: 24px; height: 24px;
+      background: #fff;
+      border-radius: 50%;
+      border: 3px solid var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    /* Signature pad */
+    .sig-canvas {
+      border: 2px dashed var(--input-border);
+      border-radius: 12px;
+      background: #fff;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* Urgency radio cards */
+    .urgency-card {
+      background: var(--input-bg);
+      border: 2px solid var(--input-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.25s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .urgency-card:hover { border-color: rgba(230,57,70,0.3); }
+    .urgency-card.selected { border-color: var(--primary); background: rgba(230,57,70,0.08); }
+    .urgency-dot {
+      width: 18px; height: 18px;
+      border: 2px solid var(--input-border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .urgency-card.selected .urgency-dot {
+      border-color: var(--primary);
+    }
+    .urgency-card.selected .urgency-dot::after {
+      content: '';
+      width: 10px; height: 10px;
+      background: var(--primary);
+      border-radius: 50%;
+    }
+
+    /* Toggle switch */
+    .toggle-track {
+      width: 48px; height: 26px;
+      background: var(--input-border);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    .toggle-track.on { background: var(--primary); }
+    .toggle-knob {
+      width: 22px; height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px; left: 2px;
+      transition: transform 0.3s;
+    }
+    .toggle-track.on .toggle-knob { transform: translateX(22px); }
+
+    /* Success animation */
+    @keyframes checkGrow {
+      0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+      50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .success-check {
+      animation: checkGrow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.5s ease-out forwards; }
+    .fade-up-d1 { animation-delay: 0.2s; opacity: 0; }
+    .fade-up-d2 { animation-delay: 0.4s; opacity: 0; }
+    .fade-up-d3 { animation-delay: 0.6s; opacity: 0; }
+
+    /* Spinner */
+    .spinner { border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Progress bar */
+    .progress-bar-fill {
+      transition: width 0.5s ease;
+      background: linear-gradient(90deg, var(--primary), #ff6b6b);
+    }
+
+    /* Summary pill */
+    .service-pill {
+      display: inline-block;
+      background: rgba(230, 57, 70, 0.12);
+      color: var(--primary);
+      border: 1px solid rgba(230, 57, 70, 0.25);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px;
+      margin: 3px;
+    }
+
+    /* Section heading underline */
+    .section-heading::after {
+      content: '';
+      display: block;
+      width: 40px; height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+      margin-top: 8px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 3px; }
+  </style>
+</head>
+<body data-id="0" class="font-inter">
+  <app-icon data-id="1" hidden data-icon="wrench" data-palette="Red"></app-icon>
+
+  <!-- Animated Background -->
+  <div data-id="2" class="bg-shapes">
+    <div data-id="3" class="shape"></div>
+    <div data-id="4" class="shape"></div>
+    <div data-id="5" class="shape"></div>
+    <div data-id="6" class="shape"></div>
+    <div data-id="7" class="shape"></div>
+  </div>
+
+  <!-- Header -->
+  <header data-id="8" id="header-a1b2" class="relative z-10 pt-8 pb-6 px-4 text-center" style="background: linear-gradient(135deg, #0D0F14 0%, #1A1D28 50%, #0D0F14 100%);">
+    <div data-id="9" class="max-w-md mx-auto">
+      <div data-id="10" class="flex items-center justify-center gap-2 mb-2">
+        <i data-id="11" data-lucide="wrench" class="w-7 h-7 text-primary"></i>
+        <h1 data-id="12" class="text-3xl md:text-4xl font-bold tracking-tight">
+          <span data-id="13" class="text-primary">Dr</span><span data-id="14" class="text-white"> AutoTech</span>
+        </h1>
+        <i data-id="15" data-lucide="car" class="w-7 h-7 text-secondary"></i>
+      </div>
+      <p data-id="16" class="text-textSecondary text-sm tracking-wide uppercase">Recepción de Vehículos</p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main data-id="17" class="relative z-10 px-4 pb-8">
+    <div data-id="18" class="max-w-[480px] mx-auto">
+
+      <!-- Progress Bar -->
+      <div data-id="19" id="progress-bar-c3d4" class="mt-6 mb-2">
+        <div data-id="20" class="w-full h-1.5 bg-inputBg rounded-full overflow-hidden">
+          <div data-id="21" id="progress-fill-e5f6" class="progress-bar-fill h-full rounded-full" style="width: 25%;"></div>
+        </div>
+      </div>
+
+      <!-- Step Indicators -->
+      <div data-id="22" id="step-indicators-g7h8" class="flex items-center justify-between mb-8 px-2">
+        <div data-id="23" class="flex flex-col items-center gap-1 step-ind" data-step-ind="1">
+          <div data-id="24" class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-primary bg-primary text-white transition-all">1</div>
+          <span data-id="25" class="text-[11px] text-textSecondary">Cliente</span>
+        </div>
+        <div data-id="26" class="flex-1 h-[2px] bg-inputBorder mx-1 step-line" data-line="1"></div>
+        <div data-id="27" class="flex flex-col items-center gap-1 step-ind" data-step-ind="2">
+          <div data-id="28" class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inputBorder text-textSecondary transition-all">2</div>
+          <span data-id="29" class="text-[11px] text-textSecondary">Vehículo</span>
+        </div>
+        <div data-id="30" class="flex-1 h-[2px] bg-inputBorder mx-1 step-line" data-line="2"></div>
+        <div data-id="31" class="flex flex-col items-center gap-1 step-ind" data-step-ind="3">
+          <div data-id="32" class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inputBorder text-textSecondary transition-all">3</div>
+          <span data-id="33" class="text-[11px] text-textSecondary">Servicios</span>
+        </div>
+        <div data-id="34" class="flex-1 h-[2px] bg-inputBorder mx-1 step-line" data-line="3"></div>
+        <div data-id="35" class="flex flex-col items-center gap-1 step-ind" data-step-ind="4">
+          <div data-id="36" class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inputBorder text-textSecondary transition-all">4</div>
+          <span data-id="37" class="text-[11px] text-textSecondary">Confirmar</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: Cliente -->
+      <section data-id="38" id="step-1" class="step-panel active glass-card p-6">
+        <h2 data-id="39" class="text-lg font-bold mb-1 flex items-center gap-2 section-heading">
+          <i data-id="40" data-lucide="user" class="w-5 h-5 text-primary"></i>
+          Datos del Cliente
+        </h2>
+        <p data-id="41" class="text-textSecondary text-sm mb-6">Ingrese la información del propietario del vehículo.</p>
+
+        <div data-id="42" class="space-y-5">
+          <div data-id="43" class="float-group">
+            <input data-id="44" type="text" id="nombre-i9j0" placeholder=" " required />
+            <label data-id="45">Nombre completo *</label>
+            <p data-id="46" class="error-msg">Este campo es obligatorio</p>
+          </div>
+          <div data-id="47" class="float-group">
+            <input data-id="48" type="tel" id="telefono-k1l2" placeholder=" " required />
+            <label data-id="49">Teléfono *</label>
+            <p data-id="50" class="error-msg">Ingrese un número de teléfono</p>
+          </div>
+          <div data-id="51" class="float-group">
+            <input data-id="52" type="email" id="email-m3n4" placeholder=" " />
+            <label data-id="53">Correo electrónico</label>
+            <p data-id="54" class="error-msg">Formato de correo inválido</p>
+          </div>
+
+          <div data-id="55" class="flex items-center justify-between p-3 rounded-xl bg-inputBg">
+            <span data-id="56" class="text-sm text-textSecondary">¿Es su primera visita?</span>
+            <div data-id="57" id="toggle-visit-o5p6" class="toggle-track" data-value="false">
+              <div data-id="58" class="toggle-knob"></div>
+            </div>
+          </div>
+
+          <div data-id="59" class="float-group">
+            <select data-id="60" id="referencia-q7r8" data-empty="true">
+              <option data-id="61" value="" disabled selected></option>
+              <option data-id="62" value="google">Google</option>
+              <option data-id="63" value="redes">Redes Sociales</option>
+              <option data-id="64" value="recomendacion">Recomendación</option>
+              <option data-id="65" value="otro">Otro</option>
+            </select>
+            <label data-id="66">¿Cómo nos conoció?</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: Vehículo -->
+      <section data-id="67" id="step-2" class="step-panel glass-card p-6">
+        <h2 data-id="68" class="text-lg font-bold mb-1 flex items-center gap-2 section-heading">
+          <i data-id="69" data-lucide="car" class="w-5 h-5 text-primary"></i>
+          Datos del Vehículo
+        </h2>
+        <p data-id="70" class="text-textSecondary text-sm mb-6">Ingrese la información de su vehículo.</p>
+
+        <div data-id="71" class="space-y-5">
+          <div data-id="72" class="grid grid-cols-2 gap-4">
+            <div data-id="73" class="float-group">
+              <input data-id="74" type="number" id="anio-s1t2" placeholder=" " min="1990" max="2026" required />
+              <label data-id="75">Año *</label>
+              <p data-id="76" class="error-msg">Requerido</p>
+            </div>
+            <div data-id="77" class="float-group">
+              <input data-id="78" type="text" id="color-u3v4" placeholder=" " />
+              <label data-id="79">Color</label>
+            </div>
+          </div>
+          <div data-id="80" class="float-group">
+            <input data-id="81" type="text" id="marca-w5x6" placeholder=" " required />
+            <label data-id="82">Marca *</label>
+            <p data-id="83" class="error-msg">Ingrese la marca</p>
+          </div>
+          <div data-id="84" class="float-group">
+            <input data-id="85" type="text" id="modelo-y7z8" placeholder=" " required />
+            <label data-id="86">Modelo *</label>
+            <p data-id="87" class="error-msg">Ingrese el modelo</p>
+          </div>
+          <div data-id="88" class="grid grid-cols-2 gap-4">
+            <div data-id="89" class="float-group">
+              <input data-id="90" type="text" id="placa-a2b3" placeholder=" " required />
+              <label data-id="91">Placa / Tag *</label>
+              <p data-id="92" class="error-msg">Requerido</p>
+            </div>
+            <div data-id="93" class="float-group">
+              <input data-id="94" type="number" id="millaje-c4d5" placeholder=" " />
+              <label data-id="95">Millaje</label>
+            </div>
+          </div>
+
+          <!-- Fuel Gauge -->
+          <div data-id="96" class="p-4 rounded-xl bg-inputBg">
+            <div data-id="97" class="flex items-center justify-between mb-3">
+              <span data-id="98" class="text-sm text-textSecondary">Nivel de gasolina</span>
+              <span data-id="99" id="fuel-emoji-e6f7" class="text-lg">🟡</span>
+            </div>
+            <div data-id="100" class="flex items-center gap-3">
+              <span data-id="101" class="text-xs font-bold text-textSecondary">E</span>
+              <div data-id="102" class="flex-1 relative">
+                <div data-id="103" class="fuel-track">
+                  <div data-id="104" id="fuel-fill-g8h9" class="fuel-fill" style="width: 50%;"></div>
+                  <input data-id="105" type="range" id="fuel-slider-i0j1" class="fuel-slider" min="0" max="100" value="50" />
+                </div>
+              </div>
+              <span data-id="106" class="text-xs font-bold text-textSecondary">F</span>
+            </div>
+            <p data-id="107" id="fuel-label-k2l3" class="text-center text-xs text-textSecondary mt-2">50%</p>
+          </div>
+
+          <!-- Extra key -->
+          <div data-id="108" class="p-3 rounded-xl bg-inputBg">
+            <span data-id="109" class="text-sm text-textSecondary block mb-3">¿Tiene llave extra?</span>
+            <div data-id="110" class="flex gap-3">
+              <label data-id="111" class="flex items-center gap-2 cursor-pointer">
+                <input data-id="112" type="radio" name="llaveExtra" value="si" class="accent-primary w-4 h-4" />
+                <span data-id="113" class="text-sm">Sí</span>
+              </label>
+              <label data-id="114" class="flex items-center gap-2 cursor-pointer">
+                <input data-id="115" type="radio" name="llaveExtra" value="no" class="accent-primary w-4 h-4" checked />
+                <span data-id="116" class="text-sm">No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: Servicios -->
+      <section data-id="117" id="step-3" class="step-panel glass-card p-6">
+        <h2 data-id="118" class="text-lg font-bold mb-1 flex items-center gap-2 section-heading">
+          <i data-id="119" data-lucide="settings" class="w-5 h-5 text-primary"></i>
+          Servicios Requeridos
+        </h2>
+        <p data-id="120" class="text-textSecondary text-sm mb-5">Seleccione los servicios que necesita.</p>
+
+        <div data-id="121" id="services-grid-m4n5" class="grid grid-cols-2 gap-3 mb-6">
+          <div data-id="122" class="service-tile" data-service="Cambio de aceite">
+            <div data-id="123" class="tile-check"><i data-id="124" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="125"><span data-id="126" class="text-base mr-1">🛢️</span><span data-id="127" class="text-sm">Cambio de aceite</span></div>
+          </div>
+          <div data-id="128" class="service-tile" data-service="Afinación del motor">
+            <div data-id="129" class="tile-check"><i data-id="130" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="131"><span data-id="132" class="text-base mr-1">🔧</span><span data-id="133" class="text-sm">Afinación</span></div>
+          </div>
+          <div data-id="134" class="service-tile" data-service="Frenos / Brakes">
+            <div data-id="135" class="tile-check"><i data-id="136" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="137"><span data-id="138" class="text-base mr-1">🛑</span><span data-id="139" class="text-sm">Frenos</span></div>
+          </div>
+          <div data-id="140" class="service-tile" data-service="Sistema de A/C">
+            <div data-id="141" class="tile-check"><i data-id="142" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="143"><span data-id="144" class="text-base mr-1">🌡️</span><span data-id="145" class="text-sm">Sistema A/C</span></div>
+          </div>
+          <div data-id="146" class="service-tile" data-service="Batería / Eléctrico">
+            <div data-id="147" class="tile-check"><i data-id="148" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="149"><span data-id="150" class="text-base mr-1">🔋</span><span data-id="151" class="text-sm">Batería</span></div>
+          </div>
+          <div data-id="152" class="service-tile" data-service="Check Engine / Diagnóstico">
+            <div data-id="153" class="tile-check"><i data-id="154" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="155"><span data-id="156" class="text-base mr-1">💡</span><span data-id="157" class="text-sm">Diagnóstico</span></div>
+          </div>
+          <div data-id="158" class="service-tile" data-service="Transmisión">
+            <div data-id="159" class="tile-check"><i data-id="160" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="161"><span data-id="162" class="text-base mr-1">🔄</span><span data-id="163" class="text-sm">Transmisión</span></div>
+          </div>
+          <div data-id="164" class="service-tile" data-service="Suspensión / Dirección">
+            <div data-id="165" class="tile-check"><i data-id="166" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="167"><span data-id="168" class="text-base mr-1">🧰</span><span data-id="169" class="text-sm">Suspensión</span></div>
+          </div>
+          <div data-id="170" class="service-tile" data-service="Lavado / Detailing">
+            <div data-id="171" class="tile-check"><i data-id="172" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="173"><span data-id="174" class="text-base mr-1">🚿</span><span data-id="175" class="text-sm">Detailing</span></div>
+          </div>
+          <div data-id="176" class="service-tile" data-service="Otro servicio">
+            <div data-id="177" class="tile-check"><i data-id="178" data-lucide="check" class="w-3.5 h-3.5 text-white hidden"></i></div>
+            <div data-id="179"><span data-id="180" class="text-base mr-1">⚙️</span><span data-id="181" class="text-sm">Otro</span></div>
+          </div>
+        </div>
+
+        <div data-id="182" id="services-error-o6p7" class="text-primary text-xs mb-3 hidden">Seleccione al menos un servicio</div>
+
+        <div data-id="183" class="float-group mb-6">
+          <textarea data-id="184" id="descripcion-q8r9" rows="4" placeholder=" " class="resize-none"></textarea>
+          <label data-id="185">Descripción del problema o solicitud adicional</label>
+        </div>
+
+        <div data-id="186">
+          <span data-id="187" class="text-sm font-semibold text-textSecondary block mb-3">¿Con qué urgencia necesita el servicio?</span>
+          <div data-id="188" class="space-y-3">
+            <div data-id="189" class="urgency-card selected" data-urgency="Sin prisa (esta semana)">
+              <div data-id="190" class="urgency-dot"><span data-id="191"></span></div>
+              <span data-id="192" class="text-sm">🟢 Sin prisa (esta semana)</span>
+            </div>
+            <div data-id="193" class="urgency-card" data-urgency="Urgente (hoy o mañana)">
+              <div data-id="194" class="urgency-dot"></div>
+              <span data-id="195" class="text-sm">🟡 Urgente (hoy o mañana)</span>
+            </div>
+            <div data-id="196" class="urgency-card" data-urgency="Emergencia (lo antes posible)">
+              <div data-id="197" class="urgency-dot"></div>
+              <span data-id="198" class="text-sm">🔴 Emergencia (lo antes posible)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 4: Confirmación -->
+      <section data-id="199" id="step-4" class="step-panel glass-card p-6">
+        <h2 data-id="200" class="text-lg font-bold mb-1 flex items-center gap-2 section-heading">
+          <i data-id="201" data-lucide="clipboard-check" class="w-5 h-5 text-primary"></i>
+          Confirmación
+        </h2>
+        <p data-id="202" class="text-textSecondary text-sm mb-5">Revise la información antes de enviar.</p>
+
+        <!-- Summary Card -->
+        <div data-id="203" id="summary-card-s0t1" class="bg-inputBg rounded-xl p-5 mb-6 border-l-4 border-primary">
+          <div data-id="204" class="space-y-3 text-sm">
+            <div data-id="205" class="flex justify-between">
+              <span data-id="206" class="text-textSecondary">Cliente:</span>
+              <span data-id="207" id="sum-nombre-u2v3" class="font-semibold text-right"></span>
+            </div>
+            <div data-id="208" class="flex justify-between">
+              <span data-id="209" class="text-textSecondary">Teléfono:</span>
+              <span data-id="210" id="sum-tel-w4x5" class="font-semibold"></span>
+            </div>
+            <div data-id="211" class="flex justify-between">
+              <span data-id="212" class="text-textSecondary">Vehículo:</span>
+              <span data-id="213" id="sum-vehiculo-y6z7" class="font-semibold text-right"></span>
+            </div>
+            <div data-id="214" class="flex justify-between">
+              <span data-id="215" class="text-textSecondary">Placa:</span>
+              <span data-id="216" id="sum-placa-a8b9" class="font-semibold"></span>
+            </div>
+            <div data-id="217">
+              <span data-id="218" class="text-textSecondary block mb-2">Servicios:</span>
+              <div data-id="219" id="sum-servicios-c0d1" class="flex flex-wrap"></div>
+            </div>
+            <div data-id="220" class="flex justify-between">
+              <span data-id="221" class="text-textSecondary">Urgencia:</span>
+              <span data-id="222" id="sum-urgencia-e2f3" class="font-semibold text-right"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authorization -->
+        <div data-id="223" class="bg-inputBg rounded-xl p-4 mb-6">
+          <p data-id="224" class="text-xs text-textSecondary leading-relaxed">
+            Al enviar este formulario, autorizo a <strong data-id="225" class="text-white">Dr AutoTech</strong> a realizar una inspección del vehículo y los servicios solicitados. Entiendo que recibiré una llamada o mensaje con el diagnóstico y presupuesto antes de proceder con cualquier reparación.
+          </p>
+        </div>
+
+        <!-- Signature Pad -->
+        <div data-id="226" class="mb-6">
+          <div data-id="227" class="flex items-center justify-between mb-2">
+            <span data-id="228" class="text-sm text-textSecondary">Firma del cliente (opcional)</span>
+            <button data-id="229" id="clear-sig-g4h5" class="text-xs text-primary flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-inputBg transition-colors">
+              <i data-id="230" data-lucide="eraser" class="w-3.5 h-3.5"></i> Limpiar
+            </button>
+          </div>
+          <canvas data-id="231" id="sig-canvas-i6j7" class="sig-canvas w-full" height="140"></canvas>
+        </div>
+      </section>
+
+      <!-- Loading Screen -->
+      <section data-id="232" id="loading-screen-k8l9" class="hidden text-center py-20">
+        <div data-id="233" class="spinner mx-auto mb-4"></div>
+        <p data-id="234" class="text-textSecondary text-sm">Procesando check-in...</p>
+      </section>
+
+      <!-- Success Screen -->
+      <section data-id="235" id="success-screen-m0n1" class="hidden">
+        <div data-id="236" class="glass-card p-8 text-center">
+          <div data-id="237" class="success-check w-20 h-20 rounded-full bg-success mx-auto flex items-center justify-center mb-5">
+            <i data-id="238" data-lucide="check" class="w-10 h-10 text-white"></i>
+          </div>
+          <h2 data-id="239" class="text-2xl font-bold mb-2 fade-up">¡Check-In Recibido!</h2>
+          <p data-id="240" id="success-msg-o2p3" class="text-textSecondary text-sm mb-6 fade-up fade-up-d1"></p>
+          <div data-id="241" id="success-time-q4r5" class="flex items-center justify-center gap-2 text-sm text-textSecondary mb-6 fade-up fade-up-d1">
+            <i data-id="242" data-lucide="clock" class="w-4 h-4"></i>
+            <span data-id="243"></span>
+          </div>
+
+          <div data-id="244" id="success-summary-s6t7" class="bg-inputBg rounded-xl p-5 mb-6 text-left border-l-4 border-success fade-up fade-up-d2">
+          </div>
+
+          <button data-id="245" id="new-checkin-u8v9" class="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-red-600 transition-all fade-up fade-up-d3 flex items-center justify-center gap-2 min-h-[48px]">
+            <i data-id="246" data-lucide="rotate-ccw" class="w-5 h-5"></i>
+            Nuevo Check-In
+          </button>
+        </div>
+      </section>
+
+      <!-- Nav Buttons -->
+      <div data-id="247" id="nav-buttons-w0x1" class="flex gap-3 mt-6">
+        <button data-id="248" id="btn-prev-y2z3" class="hidden flex-1 py-3.5 border border-inputBorder text-textSecondary rounded-xl hover:border-primary hover:text-white transition-all font-semibold flex items-center justify-center gap-2 min-h-[48px]">
+          <i data-id="249" data-lucide="arrow-left" class="w-5 h-5"></i>
+          Atrás
+        </button>
+        <button data-id="250" id="btn-next-a4b5" class="flex-1 py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-red-600 hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center justify-center gap-2 min-h-[48px]">
+          Siguiente
+          <i data-id="251" data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer data-id="252" class="relative z-10 text-center py-6 text-textSecondary text-xs border-t border-inputBorder/30">
+    © 2026 Dr AutoTech | Made by Copilot
+  </footer>
+
+  <script>
+    // === Init Lucide ===
+    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
+
+    // === State ===
+    let currentStep = 1;
+    const totalSteps = 4;
+    let selectedServices = new Set();
+    let selectedUrgency = "Sin prisa (esta semana)";
+
+    // === DOM Refs ===
+    const steps = [null, document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3'), document.getElementById('step-4')];
+    const btnNext = document.getElementById('btn-next-a4b5');
+    const btnPrev = document.getElementById('btn-prev-y2z3');
+    const progressFill = document.getElementById('progress-fill-e5f6');
+    const navButtons = document.getElementById('nav-buttons-w0x1');
+    const loadingScreen = document.getElementById('loading-screen-k8l9');
+    const successScreen = document.getElementById('success-screen-m0n1');
+
+    // === Step Navigation ===
+    function goToStep(step) {
+      if (step < 1 || step > totalSteps) return;
+
+      steps[currentStep].classList.remove('active');
+      currentStep = step;
+      steps[currentStep].classList.add('active');
+
+      updateProgress();
+      updateNavButtons();
+      updateStepIndicators();
+
+      if (step === 4) populateSummary();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Re-init lucide for new step
+      if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+    }
+
+    function updateProgress() {
+      const pct = (currentStep / totalSteps) * 100;
+      progressFill.style.width = pct + '%';
+    }
+
+    function updateNavButtons() {
+      btnPrev.classList.toggle('hidden', currentStep === 1);
+      if (currentStep === totalSteps) {
+        btnNext.innerHTML = '<span>📋</span> Enviar Check-In';
+      } else {
+        btnNext.innerHTML = 'Siguiente <i data-lucide="arrow-right" class="w-5 h-5"></i>';
+        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function updateStepIndicators() {
+      document.querySelectorAll('.step-ind').forEach(ind => {
+        const s = parseInt(ind.dataset.stepInd);
+        const circle = ind.querySelector('div');
+        if (s < currentStep) {
+          circle.className = 'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-primary bg-primary text-white transition-all';
+          circle.innerHTML = '✓';
+        } else if (s === currentStep) {
+          circle.className = 'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-primary bg-primary text-white transition-all';
+          circle.textContent = s;
+        } else {
+          circle.className = 'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inputBorder text-textSecondary transition-all';
+          circle.textContent = s;
+        }
+      });
+
+      document.querySelectorAll('.step-line').forEach(line => {
+        const l = parseInt(line.dataset.line);
+        line.style.background = l < currentStep ? 'var(--primary)' : 'var(--input-border)';
+      });
+    }
+
+    // === Validation ===
+    function validateStep(step) {
+      let valid = true;
+
+      if (step === 1) {
+        const nombre = document.getElementById('nombre-i9j0');
+        const tel = document.getElementById('telefono-k1l2');
+        const email = document.getElementById('email-m3n4');
+
+        [nombre, tel].forEach(f => {
+          const group = f.closest('.float-group');
+          if (!f.value.trim()) {
+            group.classList.add('has-error');
+            valid = false;
+          } else {
+            group.classList.remove('has-error');
+          }
+        });
+
+        if (email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+          email.closest('.float-group').classList.add('has-error');
+          valid = false;
+        } else {
+          email.closest('.float-group').classList.remove('has-error');
+        }
+      }
+
+      if (step === 2) {
+        const fields = ['anio-s1t2', 'marca-w5x6', 'modelo-y7z8', 'placa-a2b3'];
+        fields.forEach(id => {
+          const f = document.getElementById(id);
+          const group = f.closest('.float-group');
+          if (!f.value.trim()) {
+            group.classList.add('has-error');
+            valid = false;
+          } else {
+            group.classList.remove('has-error');
+          }
+        });
+      }
+
+      if (step === 3) {
+        const errDiv = document.getElementById('services-error-o6p7');
+        if (selectedServices.size === 0) {
+          errDiv.classList.remove('hidden');
+          valid = false;
+        } else {
+          errDiv.classList.add('hidden');
+        }
+      }
+
+      return valid;
+    }
+
+    // === Button Handlers ===
+    btnNext.addEventListener('click', function() {
+      if (currentStep < totalSteps) {
+        if (validateStep(currentStep)) {
+          goToStep(currentStep + 1);
+        }
+      } else {
+        // Submit
+        if (validateStep(currentStep)) {
+          submitForm();
+        }
+      }
+    });
+
+    btnPrev.addEventListener('click', function() {
+      if (currentStep > 1) goToStep(currentStep - 1);
+    });
+
+    // === Toggle Visit ===
+    document.getElementById('toggle-visit-o5p6').addEventListener('click', function() {
+      const isOn = this.dataset.value === 'true';
+      this.dataset.value = isOn ? 'false' : 'true';
+      this.classList.toggle('on', !isOn);
+    });
+
+    // === Select change ===
+    document.getElementById('referencia-q7r8').addEventListener('change', function() {
+      this.dataset.empty = this.value === '' ? 'true' : 'false';
+    });
+
+    // === Fuel Gauge ===
+    document.getElementById('fuel-slider-i0j1').addEventListener('input', function() {
+      const val = parseInt(this.value);
+      document.getElementById('fuel-fill-g8h9').style.width = val + '%';
+      document.getElementById('fuel-label-k2l3').textContent = val + '%';
+      let emoji = '🔴';
+      if (val > 60) emoji = '🟢';
+      else if (val > 25) emoji = '🟡';
+      document.getElementById('fuel-emoji-e6f7').textContent = emoji;
+    });
+
+    // === Service Tiles ===
+    document.querySelectorAll('.service-tile').forEach(tile => {
+      tile.addEventListener('click', function() {
+        const svc = this.dataset.service;
+        const icon = this.querySelector('.tile-check i');
+        if (selectedServices.has(svc)) {
+          selectedServices.delete(svc);
+          this.classList.remove('selected');
+          if (icon) icon.classList.add('hidden');
+        } else {
+          selectedServices.add(svc);
+          this.classList.add('selected');
+          if (icon) icon.classList.remove('hidden');
+        }
+        document.getElementById('services-error-o6p7').classList.add('hidden');
+      });
+    });
+
+    // === Urgency ===
+    document.querySelectorAll('.urgency-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.urgency-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedUrgency = this.dataset.urgency;
+      });
+    });
+
+    // === Signature Pad ===
+    const sigCanvas = document.getElementById('sig-canvas-i6j7');
+    const sigCtx = sigCanvas.getContext('2d');
+    let isDrawing = false;
+
+    function resizeSigCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      sigCanvas.width = rect.width;
+      sigCanvas.height = 140;
+      sigCtx.strokeStyle = '#222';
+      sigCtx.lineWidth = 2;
+      sigCtx.lineCap = 'round';
+      sigCtx.lineJoin = 'round';
+    }
+
+    function getPos(e) {
+      const rect = sigCanvas.getBoundingClientRect();
+      const touch = e.touches ? e.touches[0] : e;
+      return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }
+
+    sigCanvas.addEventListener('mousedown', function(e) {
+      isDrawing = true;
+      const pos = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(pos.x, pos.y);
+    });
+    sigCanvas.addEventListener('mousemove', function(e) {
+      if (!isDrawing) return;
+      const pos = getPos(e);
+      sigCtx.lineTo(pos.x, pos.y);
+      sigCtx.stroke();
+    });
+    sigCanvas.addEventListener('mouseup', function() { isDrawing = false; });
+    sigCanvas.addEventListener('mouseleave', function() { isDrawing = false; });
+
+    sigCanvas.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      isDrawing = true;
+      const pos = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(pos.x, pos.y);
+    });
+    sigCanvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const pos = getPos(e);
+      sigCtx.lineTo(pos.x, pos.y);
+      sigCtx.stroke();
+    });
+    sigCanvas.addEventListener('touchend', function() { isDrawing = false; });
+
+    document.getElementById('clear-sig-g4h5').addEventListener('click', function() {
+      sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    });
+
+    // Init canvas on step 4
+    const origGoToStep = goToStep;
+    const _resizeObserver = new ResizeObserver(() => {
+      if (currentStep === 4) resizeSigCanvas();
+    });
+    _resizeObserver.observe(sigCanvas);
+
+    // === Populate Summary ===
+    function populateSummary() {
+      resizeSigCanvas();
+      const nombre = document.getElementById('nombre-i9j0').value;
+      const tel = document.getElementById('telefono-k1l2').value;
+      const anio = document.getElementById('anio-s1t2').value;
+      const marca = document.getElementById('marca-w5x6').value;
+      const modelo = document.getElementById('modelo-y7z8').value;
+      const placa = document.getElementById('placa-a2b3').value;
+
+      document.getElementById('sum-nombre-u2v3').textContent = nombre;
+      document.getElementById('sum-tel-w4x5').textContent = tel;
+      document.getElementById('sum-vehiculo-y6z7').textContent = `${anio} ${marca} ${modelo}`;
+      document.getElementById('sum-placa-a8b9').textContent = placa.toUpperCase();
+
+      const svcsDiv = document.getElementById('sum-servicios-c0d1');
+      svcsDiv.innerHTML = '';
+      selectedServices.forEach(s => {
+        const pill = document.createElement('span');
+        pill.className = 'service-pill';
+        pill.textContent = s;
+        svcsDiv.appendChild(pill);
+      });
+
+      document.getElementById('sum-urgencia-e2f3').textContent = selectedUrgency;
+    }
+
+    // === Submit ===
+    function submitForm() {
+      // Hide form, show loading
+      steps[4].classList.remove('active');
+      navButtons.classList.add('hidden');
+      loadingScreen.classList.remove('hidden');
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('es-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const dateStr = now.toLocaleDateString('es-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      const formData = {
+        nombre: document.getElementById('nombre-i9j0').value,
+        telefono: document.getElementById('telefono-k1l2').value,
+        email: document.getElementById('email-m3n4').value,
+        primeraVisita: document.getElementById('toggle-visit-o5p6').dataset.value === 'true',
+        referencia: document.getElementById('referencia-q7r8').value,
+        anio: document.getElementById('anio-s1t2').value,
+        marca: document.getElementById('marca-w5x6').value,
+        modelo: document.getElementById('modelo-y7z8').value,
+        color: document.getElementById('color-u3v4').value,
+        placa: document.getElementById('placa-a2b3').value,
+        millaje: document.getElementById('millaje-c4d5').value,
+        gasolina: document.getElementById('fuel-slider-i0j1').value + '%',
+        llaveExtra: document.querySelector('input[name="llaveExtra"]:checked')?.value || 'no',
+        servicios: Array.from(selectedServices),
+        descripcion: document.getElementById('descripcion-q8r9').value,
+        urgencia: selectedUrgency,
+        horaLlegada: timeStr,
+        fecha: dateStr,
+        timestamp: now.toISOString()
+      };
+
+      // Save to localStorage
+      try {
+        const entries = JSON.parse(localStorage.getItem('drAutoTechCheckins') || '[]');
+        entries.push(formData);
+        localStorage.setItem('drAutoTechCheckins', JSON.stringify(entries));
+      } catch(e) {}
+
+      // Simulate loading
+      setTimeout(() => {
+        loadingScreen.classList.add('hidden');
+        successScreen.classList.remove('hidden');
+
+        document.getElementById('success-msg-o2p3').textContent = `Gracias, ${formData.nombre}. Hemos recibido tu solicitud. Un técnico se comunicará contigo pronto.`;
+        document.getElementById('success-time-q4r5').querySelector('span').textContent = `Hora de llegada: ${timeStr} — ${dateStr}`;
+
+        const summaryHTML = `
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between"><span class="text-textSecondary">Cliente:</span><span class="font-semibold text-right">${formData.nombre}</span></div>
+            <div class="flex justify-between"><span class="text-textSecondary">Teléfono:</span><span class="font-semibold">${formData.telefono}</span></div>
+            ${formData.email ? `<div class="flex justify-between"><span class="text-textSecondary">Email:</span><span class="font-semibold text-right text-sm">${formData.email}</span></div>` : ''}
+            <div class="flex justify-between"><span class="text-textSecondary">Vehículo:</span><span class="font-semibold text-right">${formData.anio} ${formData.marca} ${formData.modelo}</span></div>
+            ${formData.color ? `<div class="flex justify-between"><span class="text-textSecondary">Color:</span><span class="font-semibold">${formData.color}</span></div>` : ''}
+            <div class="flex justify-between"><span class="text-textSecondary">Placa:</span><span class="font-semibold">${formData.placa.toUpperCase()}</span></div>
+            ${formData.millaje ? `<div class="flex justify-between"><span class="text-textSecondary">Millaje:</span><span class="font-semibold">${Number(formData.millaje).toLocaleString()} mi</span></div>` : ''}
+            <div class="flex justify-between"><span class="text-textSecondary">Gasolina:</span><span class="font-semibold">${formData.gasolina}</span></div>
+            <div><span class="text-textSecondary block mb-2">Servicios:</span><div class="flex flex-wrap">${formData.servicios.map(s => `<span class="service-pill">${s}</span>`).join('')}</div></div>
+            <div class="flex justify-between"><span class="text-textSecondary">Urgencia:</span><span class="font-semibold text-right">${formData.urgencia}</span></div>
+            ${formData.descripcion ? `<div><span class="text-textSecondary block mb-1">Notas:</span><p class="text-xs text-textSecondary/80 italic">"${formData.descripcion}"</p></div>` : ''}
+          </div>
+        `;
+        document.getElementById('success-summary-s6t7').innerHTML = summaryHTML;
+
+        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+          lucide.createIcons();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 1800);
+    }
+
+    // === New Check-In ===
+    document.getElementById('new-checkin-u8v9').addEventListener('click', function() {
+      // Reset form
+      document.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], input[type="number"], textarea').forEach(f => f.value = '');
+      document.querySelectorAll('.float-group').forEach(g => g.classList.remove('has-error'));
+      document.getElementById('referencia-q7r8').selectedIndex = 0;
+      document.getElementById('referencia-q7r8').dataset.empty = 'true';
+      document.getElementById('toggle-visit-o5p6').dataset.value = 'false';
+      document.getElementById('toggle-visit-o5p6').classList.remove('on');
+      document.getElementById('fuel-slider-i0j1').value = 50;
+      document.getElementById('fuel-fill-g8h9').style.width = '50%';
+      document.getElementById('fuel-label-k2l3').textContent = '50%';
+      document.getElementById('fuel-emoji-e6f7').textContent = '🟡';
+      document.querySelector('input[name="llaveExtra"][value="no"]').checked = true;
+
+      selectedServices.clear();
+      document.querySelectorAll('.service-tile').forEach(t => {
+        t.classList.remove('selected');
+        const icon = t.querySelector('.tile-check i');
+        if (icon) icon.classList.add('hidden');
+      });
+
+      selectedUrgency = "Sin prisa (esta semana)";
+      document.querySelectorAll('.urgency-card').forEach((c, i) => {
+        c.classList.toggle('selected', i === 0);
+      });
+
+      document.getElementById('descripcion-q8r9').value = '';
+
+      successScreen.classList.add('hidden');
+      navButtons.classList.remove('hidden');
+
+      currentStep = 1;
+      steps.forEach((s, i) => { if (s) s.classList.remove('active'); });
+      steps[1].classList.add('active');
+
+      updateProgress();
+      updateNavButtons();
+      updateStepIndicators();
+
+      if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // === Input blur validation clear ===
+    document.querySelectorAll('.float-group input, .float-group select').forEach(f => {
+      f.addEventListener('input', function() {
+        if (this.value.trim()) {
+          this.closest('.float-group').classList.remove('has-error');
+        }
+      });
+    });
+
+    // === Init ===
+    updateStepIndicators();
+  </script>
+</body>
+</html>
